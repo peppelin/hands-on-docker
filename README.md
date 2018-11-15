@@ -1,10 +1,10 @@
 # Hands-on Docker
 
-Let's play with [Docker](https://www.docker.com/) : the goal of this *hands-on* is to learn how to use Docker to package and deploy a [Node.js](https://nodejs.org/), along with its dependencies (a [Redis](http://redis.io/) database) and a load-balancer ([HAProxy](http://www.haproxy.org/)).
+Let's play with [Docker](https://www.docker.com/) : the goal of this *hands-on* is to learn how to use Docker to package and deploy a [Flask](http://flask.pocoo.org/), along with its dependencies (a [Redis](http://redis.io/) database) and a load-balancer ([Nginx](https://www.nginx.com/)).
 
 Docker in a nutshell : a tool to build **images**, and run **containers** based on images. It can run multiple different containers based on the same image.
 
-The Node.js web-application (provided) is very simple, and will just try to log every access to its homepage in a Redis database. It also provides a `/logs` endpoint to read the logs (from the Redis database).
+The flask web-application (provided) is very simple, and will just increases a counter for each visit in a Redis database. It also provides a `/host` endpoint to check how many visits for the given host (from the Redis database).
 
 The *hands-on* is decomposed into the following steps :
 
