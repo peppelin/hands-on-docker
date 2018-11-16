@@ -25,7 +25,7 @@ telnet localhost 6379
 
 you should see `Escape character is '^]'.` Enter `ping` and hit enter : redis should reply you with a nice `pong`. Good ! You can now `quit`.
 
-So we can access our application which is on one container on port 3000, and redis which is on another container on port 6379. But how do we make our application talk to redis?
+So we can access our application which is on one container on port 8080, and redis which is on another container on port 6379. But how do we make our application talk to redis?
 
 Docker provides a mechanism to [link](https://docs.docker.com/userguide/dockerlinks/) containers together, which is very easy to use :
 
