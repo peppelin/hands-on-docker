@@ -49,7 +49,7 @@ Let's have a look at our new `Dockerfile`, step by step :
   * we could have used a basic
     ```
     COPY . /code
-    RUN pip install --upgrade pip && pip install -r requirements.txt
+    RUN pip3 install --upgrade pip && pip install -r requirements.txt
     ```
     to copy the current directory (`.`) from your machine to the `/code` directory in the image, and then simply run `pip install` (in the `/code` directory of the image).
 The problem with this solution, is that the [`COPY` instruction](https://docs.docker.com/reference/builder/#copy) will clear the cache if a file has been changed. So, each time you change a file, docker will re-upload everything and re-run `pip install`. And we need to execute `pip install` only if we change the `requirements.txt` file (otherwise we might end up with different dependencies versions, and so on).
@@ -58,10 +58,10 @@ The problem with this solution, is that the [`COPY` instruction](https://docs.do
   ```
   EXPOSE 8080
   ```
-* define the command used to start the application (`python app.py`), using the [`CMD` instruction](https://docs.docker.com/reference/builder/#cmd)
+* define the command used to start the application (`python3 app.py`), using the [`CMD` instruction](https://docs.docker.com/reference/builder/#cmd)
 
   ```
-  CMD [ "python", "app.py" ]
+  CMD [ "python3", "app.py" ]
   ```
 
 You can now build the image, using the following command :
@@ -74,7 +74,7 @@ Notice that the tag is now `handsondocker:ubuntu`. If you don't provide a tag, d
 If you run a new container, based on this new image, with
 
 ```
-docker run --rm -it -p 3000:3000 handsondocker:ubuntu
+docker run --rm -it -p 8080:80 handsondocker:ubuntu
 ```
 you should be able to play with the application the same way you did with the previous container.
 
