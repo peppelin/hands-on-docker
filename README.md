@@ -1,157 +1,111 @@
-
 # Hands-on Docker
 
-## Step 3 : Writing your own image
+## Step 4 : Using Docker Compose
 
-Using a ready-to-use image was nice, but we didn't really learned how to write a `Dockerfile`. So, let's try again, but this time using a more basic base image : we will use the [ubuntu image](https://registry.hub.docker.com/_/ubuntu/) as a base image.
+We will now extend our setup to include a [Redis](http://redis.io/) instance. There are many ways to do that :
 
-So, starting from a basic ubuntu, we will need to :
+* install Redis in our application's container. We won't do that, because that's against the philosophy of Docker : *each container should have a single responsibility*
+* create a new image and container to run a Redis instance, and [link it](https://docs.docker.com/userguide/dockerlinks/) to our existing application's container.
 
-* install python and pip
-* copy our application files to the image, in the right directory
-* run a `pip install` to get the application's dependencies in the image
-* define the port used by the application
-* define the command used to start the application
-
-Let's have a look at our new `Dockerfile`, step by step :
-
-* declare the base image (we will use the latest ubuntu LTS)
-
-  ```
-  FROM ubuntu:18.04
-  ```
-* install python, pip and requirements:
-  
-  ```
-  RUN apt-get update && apt-get install -y \
-    python3 python3-pip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-  ```
-  a few notes here :
-  * we chain multiple commands in a single instruction to avoid creating too much intermediate images
-  * we clean up at the end of the instruction in order to save some space in the final image - see [this link](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) for more informations
-* choose a directory for our application, create it, and use it as the current directory
-
-  ```
-  RUN mkdir -p /code
-  WORKDIR /code
-  ```
-  You can read more about the [`WORKDIR` instruction](https://docs.docker.com/reference/builder/#workdir) used to define a directory as the current directory
-* copy our application's files to the image, and run `pip install`
-
-  ```
-  COPY app/requirements.txt /code
-  RUN pip install --upgrade pip && pip install -r requirements.txt
-  COPY app /code
-  ```
-  here again, a few notes are required :
-  * we could have used a basic
-    ```
-    COPY . /code
-    RUN pip3 install --upgrade pip && pip install -r requirements.txt
-    ```
-    to copy the current directory (`.`) from your machine to the `/code` directory in the image, and then simply run `pip install` (in the `/code` directory of the image).
-The problem with this solution, is that the [`COPY` instruction](https://docs.docker.com/reference/builder/#copy) will clear the cache if a file has been changed. So, each time you change a file, docker will re-upload everything and re-run `pip install`. And we need to execute `pip install` only if we change the `requirements.txt` file (otherwise we might end up with different dependencies versions, and so on).
-  * so the solution to this problem is to run `pip install` BEFORE copying all the files. But we still need the `requirements.txt` **BEFORE** running `pip install`. So, we copy the `requirements.txt` file, then run `pip install`, and then copy all the other files.
-* declare that the application listen on the port 8080
-  ```
-  EXPOSE 8080
-  ```
-* define the command used to start the application (`python3 app.py`), using the [`CMD` instruction](https://docs.docker.com/reference/builder/#cmd)
-
-  ```
-  CMD [ "python3", "app.py" ]
-  ```
-
-You can now build the image, using the following command :
+We will start by running a Redis container, using a ready-to-use [Redis image](https://registry.hub.docker.com/_/redis/) :
 
 ```
-docker build -t handsondocker:ubuntu .
-```
-Notice that the tag is now `handsondocker:ubuntu`. If you don't provide a tag, docker will use by default `latest` (so our previous image was `handsondocker:latest`). To differentiate between the 2 images, we will tag this one `ubuntu` to indicate that it is built from an ubuntu base image.
-
-If you run a new container, based on this new image, with
-
-```
-docker run --rm -it -p 8080:80 handsondocker:ubuntu
-```
-you should be able to play with the application the same way you did with the previous container.
-
-You can now use `Ctrl+C` to stop the container.
-
-### Private Docker Image repositories
-
-Until now, your were using public images, but now, let's use private images (from a private Docker registry - you can find the official documentation at https://docs.docker.com/engine/reference/commandline/login/):
-
-  * Adding credentials :
-
-```
-docker login [DOCKER_IMAGE_PRIVATE_REPOSITORY_URL] -u [DOCKER_IMAGE_PRIVATE_REPOSITORY_USER] -p [DOCKER_IMAGE_PRIVATE_REPOSITORY_PASSWORD]
-```
-   
-  * From now on, you will be able to consume images (if your "user" has "read" privileges) from the private Image repository
-
-As you can see, all our images are stored locally, but we need to share them with the team so, let's push the image to the docker registry. Just type the command below:
-
-```
-docker push [IMAGE_NAME]
+docker run --rm -ti -p 6379:6379 --name redis-container redis
 ```
 
-### Persistence
+Docker will download the redis image form its registry, and start a new container named `redis-container`, with its port 6379 (the default redis port) mapped to the docker host.
 
-By default all data generated by your application is stored wihtin the container, that means, once your container is stopped/destroyed the data is lost.
+Note that it is important to give a name to the redis container, because we will need it later to make it accessible from the application container.
 
-Docker provides a very good mechanism for persisting data (such as database content). This mechanims is driven by [Volumes](https://docs.docker.com/engine/tutorials/dockervolumes/)
-
-  * Adding a volume to your container:
+To test it, you can use `telnet` to talk to the redis instance :
 
 ```
-docker run --rm -it -p 3000:3000 -v /opt/data/docker_vol/handson:/var/data/logs handsondocker:ubuntu
+telnet localhost 6379
 ```
 
-  * the `-v` flag mounts host file system to the container file system. Next time you run the container, the data strored by your application will be there. NOTE: in this example, the host directory /opt/data/docker_vol/handson is mounted at /var/data/logs inside the container
+you should see `Escape character is '^]'.` Enter `ping` and hit enter : redis should reply you with a nice `pong`. Good ! You can now `quit`.
 
-### Configuring containers
-Accordig to Docker best practices, Docker images have to be ready to be adapted to be executes in a different contexts (different environments), and kwnowing that a Docker images is inmutable, you have to able to provided this capability to your image.
+So we can access our application which is on one container on port 3000, and redis which is on another container on port 6379. But how do we make our application talk to redis?
 
-Docker provides this capability by injecting **ENVIRONMENT VARIABLES**, as a consequence, your source code has to be ready to read those variables.
+Docker provides a mechanism to [link](https://docs.docker.com/userguide/dockerlinks/) containers together, which is very easy to use :
 
-Below the way to send **ENVIRONMENT VARIABLES** to your container:
+* just add the `--link` option to the `docker run` command
+* docker will add some entries in `/etc/hosts` and export some environment variables, so that you can access the other container easily
 
-```
-docker run -d -p 80 --name myimage -e ENV_VAR1="env_var1_value" -e ENV_VAR2="env_var2_value" myimage
-```
-
-### Managing Docker Containers
-
-At any time you can access to see which containers are in your computer tyoing the command below:
+Let's start a new application container, but linked to the redis container already running :
 
 ```
-docker ps -a
+docker run --rm -it -p 8080:80 --link redis-container:redis handsondocker
 ```
 
-* the `ps` shows the container status, adding `-a` flag will show you all containers (no matter if they are running or stopped)
+The `redis-container:redis` syntax is used to say that the container named `redis-container` should be aliased `redis` on the newly started container.
 
-### Clean up images and containers
+If you go to the application's homepage using your browser, you will notice that the connection to redis instance has been established!
 
-As you can see, working with Docker is so easy, but there is just one drawback: HDD Space.
+So, how is it working ? when starting the application container, docker did add a line in the `/etc/hosts` file to declare a host named `redis` (the alias we defined), pointing to the IP of the redis container. And the application's configuration use the `redis` hostname to connect to redis. Bingo ! If you decide to links the containers with a different alias for the redis container, the application won't be able to talk to the redis instance, even though the 2 containers are well linked.
 
-Images and Containers take space at your computer. Now you will see a set of useful commands for cleaning your storage:
+While it is working, you might have noticed that the setup is a little complex, with command-line getting bigger and bigger. So, instead of doing all this by hand, we will now use a higher-level tool name [Docker Compose](https://docs.docker.com/compose/), that can work with multiple containers at once.
 
-  * Remove exited(stopped) containers:
+Stop all your containers (you can even remove them with the `docker rm` command), and we will start again from a clean `docker-compose.yml` file, that will be used to define our current infrastructure :
 
-```
-docker rm $(docker ps --filter "status=exited" -q)
-```
+* 1 Redis container, based on the [Redis image](https://registry.hub.docker.com/_/redis/)
+* 1 application container, based on a custom image built from the current directory, with a link to the redis container, and a port mapping (so you can access the application from the outside of the container)
 
-
-  * Remove unused orphan images (`dangling=true` flag filters orphan images)
+The `docker-compose.yml` is pretty simple (for the moment) :
 
 ```
-docker rmi $(docker images --filter dangling=true -q) 
+redis:
+  image: redis
+app:
+  build: .
+  links:
+  - redis
+  ports:
+  - "8080:80"
 ```
 
-TODO: Before to proceed, it is time to check your progress, so jump to [Exercise 1](https://bitbucket.org/mediastream_ag/docker-hands-on/src/exercise1#readme).
+* we have declared a `redis` container, based on the `redis` image
+* and an `app` container, based on an image built from the `Dockerfile` in the current directory, linked to the `redis` container, and mapping the port 8080 on the docker host to the port 80 on the container.
 
-Once completed, move to the [Step4](https://github.com/peppelin/hands-on-docker/tree/step4)
+Notice that we didn't declare ports mapping for the redis container : we only need to declare them if we want to access the services from the outside. Here, the redis port will be accessed only from the app container.
+
+We can now start the whole infrastructure with a single command !
+
+```
+docker-compose up
+```
+
+Docker Compose will rebuild our application image (giving it a new name), and start the 2 containers. You should be able to access the application like before, and make sure the logs are being written to the redis instance.
+
+You can now use `Ctrl+C` to stop everything (just note that this time, the containers won't be auto-destroyed. If you run `docker ps -a` you will notice that they are still around. You can remove them with the `docker rm` command if you want).
+
+Now let's take a look on other useful Docker Compose commands:
+
+* To execute a custom file located in other directory or with other name (not the default one)
+
+```
+docker-compose -f [my_compose_file] up
+```
+
+* To execute your docker compose in a "background" mode:
+
+```
+docker-compose up -d
+```
+
+* To view logs:
+```
+docker-compose logs
+```
+
+* To stop all containers defined by your "docker_compose" file:
+```
+docker-compose stop
+```
+
+* To stop and remove all containers defined by your "docker_compose" file:
+```
+docker-compose down
+```
+
+You can jump to the [step5](https://github.com/peppelin/hands-on-docker/blob/step5/) to learn how to run multiple oinstances of your application
