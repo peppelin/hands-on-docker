@@ -5,7 +5,8 @@ RUN apt-get update && apt-get install -y \
 	&& rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 RUN mkdir -p /code
 WORKDIR /code
-COPY app/requirements.txt /code                                                                                                                                                                                9   RUN pip install --upgrade pip && pip install -r requirements.txt
+COPY app/requirements.txt /code
+RUN pip3 install --upgrade pip && pip install -r requirements.txt
 COPY app /code
 EXPOSE 8080
 CMD [ "python", "app.py" ]
