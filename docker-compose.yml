@@ -1,8 +1,23 @@
 redis:
   image: redis
-app:
+app1:
   build: .
+  hostname: app1
   links:
   - redis
   ports:
   - "8080:80"
+app2:
+  build: .
+  hostname: app2
+  links:
+  - redis
+  ports:
+  - "8081:80"
+app3:
+  build: .
+  hostname: app3
+  links:
+  - redis
+  ports:
+  - "8082:80"
