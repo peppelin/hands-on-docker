@@ -152,5 +152,6 @@ docker rm $(docker ps --filter "status=exited" -q)
 docker rmi $(docker images --filter dangling=true -q) 
 ```
 
-TODO: Before to proceed, it is time to check your progress, so jump to [Exercise 1](https://bitbucket.org/mediastream_ag/docker-hands-on/src/exercise1#readme)
+TODO: Before to proceed, it is time to check your progress, so jump to [Exercise 1](https://bitbucket.org/mediastream_ag/docker-hands-on/src/exercise1#readme).
+
 Once completed, move to the [Step4](https://github.com/peppelin/hands-on-docker/tree/step4)
