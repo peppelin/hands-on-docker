@@ -1,118 +1,156 @@
+
 # Hands-on Docker
 
-## Step 2 : Using an existing Node.js image
+## Step 3 : Writing your own image
 
-So, you have docker up and running. It's time to use it to run our application !
+Using a ready-to-use image was nice, but we didn't really learned how to write a `Dockerfile`. So, let's try again, but this time using a more basic base image : we will use the [ubuntu image](https://registry.hub.docker.com/_/ubuntu/) as a base image.
 
-We will write a `Dockerfile` to build an **image**, that will be used later to run a **container**.
+So, starting from a basic ubuntu, we will need to :
 
-Fortunately, Docker provides a [registry](https://registry.hub.docker.com/) of images, that can be used to avoid restarting from scratch each time. For example, it has a [Nginx image](https://registry.hub.docker.com/_/nginx/).
+* install python and pip
+* copy our application files to the image, in the right directory
+* run a `pip install` to get the application's dependencies in the image
+* define the port used by the application
+* define the command used to start the application
 
-The documentation for the [Nginx image](https://registry.hub.docker.com/_/nginx/) give us an example `Dockerfile` :1
+Let's have a look at our new `Dockerfile`, step by step :
 
-```
-FROM nginx
-COPY nginx.conf /etc/nginx/nginx.conf
-```
+* declare the base image (we will use the latest ubuntu LTS)
 
-The application listens by default on the **port 80**, so we can adjust the `Dokerfile` to:
+  ```
+  FROM ubuntu:18.04
+  ```
+* install python, pip and requirements:
+  
+  ```
+  RUN apt-get update && apt-get install -y \
+    python3 python3-pip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+  ```
+  a few notes here :
+  * we chain multiple commands in a single instruction to avoid creating too much intermediate images
+  * we clean up at the end of the instruction in order to save some space in the final image - see [this link](https://docs.docker.com/develop/develop-images/dockerfile_best-practices/) for more informations
+* choose a directory for our application, create it, and use it as the current directory
 
-```
-FROM nginx
-COPY nginx.conf /etc/nginx/nginx.conf
-EXPOSE 3000
-```
+  ```
+  RUN mkdir -p /code
+  WORKDIR /code
+  ```
+  You can read more about the [`WORKDIR` instruction](https://docs.docker.com/reference/builder/#workdir) used to define a directory as the current directory
+* copy our application's files to the image, and run `pip install`
 
-The [`EXPOSE` instruction](https://docs.docker.com/reference/builder/#expose) is used to declare the ports on which services are listening. It will be used later to access the application from outside of the container.
+  ```
+  COPY app/requirements.txt /code
+  RUN pip install --upgrade pip && pip install -r requirements.txt
+  COPY app /code
+  ```
+  here again, a few notes are required :
+  * we could have used a basic
+    ```
+    COPY . /code
+    RUN pip install --upgrade pip && pip install -r requirements.txt
+    ```
+    to copy the current directory (`.`) from your machine to the `/code` directory in the image, and then simply run `pip install` (in the `/code` directory of the image).
+The problem with this solution, is that the [`COPY` instruction](https://docs.docker.com/reference/builder/#copy) will clear the cache if a file has been changed. So, each time you change a file, docker will re-upload everything and re-run `pip install`. And we need to execute `pip install` only if we change the `requirements.txt` file (otherwise we might end up with different dependencies versions, and so on).
+  * so the solution to this problem is to run `pip install` BEFORE copying all the files. But we still need the `requirements.txt` **BEFORE** running `pip install`. So, we copy the `requirements.txt` file, then run `pip install`, and then copy all the other files.
+* declare that the application listen on the port 8080
+  ```
+  EXPOSE 8080
+  ```
+* define the command used to start the application (`python app.py`), using the [`CMD` instruction](https://docs.docker.com/reference/builder/#cmd)
 
-Now that we have a `Dockerfile`, we need to build an image using the [`docker build`](https://docs.docker.com/reference/commandline/cli/#build) command :
+  ```
+  CMD [ "python", "app.py" ]
+  ```
 
-```
-docker build -t handsondocker .
-```
-
-* The `-t` option is used to define a tag (think name) to our image. Here, it will be named `handsondocker`
-* The `.` at the end of the command is very important : it is the path that will be used as the *build context*. If your current directory is the root of the repository, then the path is the current directory (which is `.`). The *build context* is used to "upload" the application to the image.
-
-This step can take quite a bit of time the first time, because Docker will download the base Nginx image from its [registry](https://registry.hub.docker.com/).
-
-We can also use a [`.dockerignore`](https://docs.docker.com/reference/builder/#the-dockerignore-file) file to exclude some directories/files from being uploaded to the image, for example :
-
-```
-.git
-```
-
-If the git repository is quite big, and/or if there are some cache files, it will take more time to upload them to the image, but they won't be used. So it's better to exclude them (the same way you use a `.gitignore` to exclude files from being committed to a git repository).
-
-So, let's check our image, with the `docker images` command :
-
-```
-docker images
-REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
-handsondocker       latest              e3f98fc5f89e        23 minutes ago      109MB
-nginx               latest              62f816a209e6        9 days ago          109MB
-```
-
-We can see our new `handsondocker` image, but we can also see the `nginx` image. This is because Docker use a system of *layers* for its images : every image is the sum of its "base" image and its own instructions.
-If we upload web content to the image `handsondocker`, we'll see that our image is a few MB bigger than the base image: it is the size of the application.
-
-In fact, each instruction in the `Dockerfile` result in a new image! You can see all images (including the "intermediate" images) but running the command `docker images -a` :
-
-```
-docker images -a
-REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
-handsondocker       latest              e3f98fc5f89e        26 minutes ago      109MB
-<none>              <none>              6c4f495bdc96        22 hours ago        89.2MB
-lidl_web            latest              b6dbf8c63743        22 hours ago        89.2MB
-<none>              <none>              3ebaefd32d0d        22 hours ago        89.2MB
-<none>              <none>              126d79a5e383        22 hours ago        89.2MB
-<none>              <none>              4b7011d6ce26        22 hours ago        78.2MB
-<none>              <none>              259b8595c49a        22 hours ago        78.2MB
-redis               5.0.1-alpine        28d359e5d4bb        6 days ago          40.9MB
-nginx               latest              62f816a209e6        9 days ago          109MB
-```
-
-You can now re-run the `docker build -t handsondocker .` command, and it should execute very fast: because Docker has an intermediate image for each instruction, it use them as cache layers to speed up images building. So, if your instructions did not change, docker will use its cache. However, if an instruction change, docker will use its cache until the instruction, and then it will rebuild intermediate images (as the first time).
-
-Note that if you want to force a rebuild of the image without using the cache, you can use the `--no-cache=true` option.
-
-Ok, enough playing with the images - let's play with containers!
-
-We will run a new container based on our image, using the [`docker run`](https://docs.docker.com/reference/commandline/cli/#run) command :
+You can now build the image, using the following command :
 
 ```
-docker run --rm -it -p 8080:80 handsondocker
+docker build -t handsondocker:ubuntu .
 ```
+Notice that the tag is now `handsondocker:ubuntu`. If you don't provide a tag, docker will use by default `latest` (so our previous image was `handsondocker:latest`). To differentiate between the 2 images, we will tag this one `ubuntu` to indicate that it is built from an ubuntu base image.
 
-* the `--rm` option is used to auto-remove the container at the end (otherwise, Docker will just stop it, so that it can be started again - or manually removed if you don't need it anymore). If you are playing with Docker, and starting lots of containers, it is recommended to use the `--rm` option, to avoid keeping lots of unused containers around.
-* the `-it` option is a shortcut for 2 options usually used together :
-  * `-i` to enable the *interactive* mode : the standard input will be kept open
-  * `-t` to enable the *tty* mode : it will allocate a *pseudo-TTY*
-
-  You should use the `-it` option if you want to keep an interactive terminal when starting the container (otherwise, you won't be able to interact with it directly - you will need to use the `docker exec` command)
-* the `-p 8080:80` option is used to map the port `8080` from the docker host to the port `80` of the container. This one is very important, because without it we won't be able to access our application from outside of the container!
-* the last argument is the name of the image to use - `handsondocker`
-
-You can check with the `docker ps` that the container is started :
+If you run a new container, based on this new image, with
 
 ```
-CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                  NAMES
-11156f83978b        handsondocker       "nginx -g 'daemon of…"   4 seconds ago       Up 3 seconds        0.0.0.0:8080->80/tcp   dreamy_kirch
+docker run --rm -it -p 3000:3000 handsondocker:ubuntu
+```
+you should be able to play with the application the same way you did with the previous container.
+
+You can now use `Ctrl+C` to stop the container.
+
+### Private Docker Image repositories
+
+Until now, your were using public images, but now, let's use private images (from a private Docker registry - you can find the official documentation at https://docs.docker.com/engine/reference/commandline/login/):
+
+  * Adding credentials :
+
+```
+docker login [DOCKER_IMAGE_PRIVATE_REPOSITORY_URL] -u [DOCKER_IMAGE_PRIVATE_REPOSITORY_USER] -p [DOCKER_IMAGE_PRIVATE_REPOSITORY_PASSWORD]
+```
+   
+  * From now on, you will be able to consume images (if your "user" has "read" privileges) from the private Image repository
+
+As you can see, all our images are stored locally, but we need to share them with the team so, let's push the image to the docker registry. Just type the command below:
+
+```
+docker push [IMAGE_NAME]
 ```
 
-We can verify that the port `8080` has been mapped. And we can also see that the container has been given an auto-generated name `dreamy_kirch`, because we did not gave him one.
+### Persistence
 
-You can now use `Ctrl+C` to stop the container (it will be auto-removed thanks to the `--rm` option). If you run `docker ps` again it should be empty. Same for `docker ps -a` (which list all containers, even the stopped ones).
+By default all data generated by your application is stored wihtin the container, that means, once your container is stopped/destroyed the data is lost.
 
-### Accessing container
+Docker provides a very good mechanism for persisting data (such as database content). This mechanims is driven by [Volumes](https://docs.docker.com/engine/tutorials/dockervolumes/)
 
-Sometimes it will be needed to access inside container in order to execute some commands in order to check container contents. Docker provides the following commans:
+  * Adding a volume to your container:
 
 ```
-docker exec -ti [container_id] bash
+docker run --rm -it -p 3000:3000 -v /opt/data/docker_vol/handson:/var/data/logs handsondocker:ubuntu
 ```
 
-This instruction will allow you to access to the terminal inside container. From then on, you can move inside the container for executing your commands.
+  * the `-v` flag mounts host file system to the container file system. Next time you run the container, the data strored by your application will be there. NOTE: in this example, the host directory /opt/data/docker_vol/handson is mounted at /var/data/logs inside the container
+
+### Configuring containers
+Accordig to Docker best practices, Docker images have to be ready to be adapted to be executes in a different contexts (different environments), and kwnowing that a Docker images is inmutable, you have to able to provided this capability to your image.
+
+Docker provides this capability by injecting **ENVIRONMENT VARIABLES**, as a consequence, your source code has to be ready to read those variables.
+
+Below the way to send **ENVIRONMENT VARIABLES** to your container:
+
+```
+docker run -d -p 80 --name myimage -e ENV_VAR1="env_var1_value" -e ENV_VAR2="env_var2_value" myimage
+```
+
+### Managing Docker Containers
+
+At any time you can access to see which containers are in your computer tyoing the command below:
+
+```
+docker ps -a
+```
+
+* the `ps` shows the container status, adding `-a` flag will show you all containers (no matter if they are running or stopped)
+
+### Clean up images and containers
+
+As you can see, working with Docker is so easy, but there is just one drawback: HDD Space.
+
+Images and Containers take space at your computer. Now you will see a set of useful commands for cleaning your storage:
+
+  * Remove exited(stopped) containers:
+
+```
+docker rm $(docker ps --filter "status=exited" -q)
+```
 
 
-You can jump to the [step3](https://github.com/peppelin/hands-on-docker/tree/step3#readme) to find how to write your own image
+  * Remove unused orphan images (`dangling=true` flag filters orphan images)
+
+```
+docker rmi $(docker images --filter dangling=true -q) 
+```
+
+TODO: Before to proceed, it is time to check your progress, so jump to [Exercise 1](https://bitbucket.org/mediastream_ag/docker-hands-on/src/exercise1#readme)
+Once completed, move to the [Step4](https://github.com/peppelin/hands-on-docker/tree/step4)
