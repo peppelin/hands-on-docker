@@ -36,7 +36,7 @@ docker build -t handsondocker .
 
 This step can take quite a bit of time the first time, because Docker will download the base Nginx image from its [registry](https://registry.hub.docker.com/).
 
-We can also use a [`.dockerignore` file](https://docs.docker.com/reference/builder/#the-dockerignore-file) to exclude some directories/files from being uploaded to the image, for example :
+We can also use a [`.dockerignore`](https://docs.docker.com/reference/builder/#the-dockerignore-file) file to exclude some directories/files from being uploaded to the image, for example :
 
 ```
 .git
