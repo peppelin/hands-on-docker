@@ -108,4 +108,4 @@ docker-compose stop
 docker-compose down
 ```
 
-You can jump to the [step5](https://github.com/peppelin/hands-on-docker/blob/step5/) to learn how to run multiple oinstances of your application
+You can jump to the [step5](https://github.com/peppelin/hands-on-docker/tree/step5/) to learn how to run multiple oinstances of your application
