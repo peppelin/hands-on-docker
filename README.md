@@ -121,8 +121,7 @@ You can now use `Ctrl+C` to stop everything (just note that this time, the conta
 ### Improvements
 
 * We've changed the app base image from ubuntu to alpine linux.
- * The smaller the image, the better.
- * Alpine has less applications installed, so less things to update/check during security hardening.
+  * The smaller the image, the better.
+  * Alpine has less applications installed, so less things to update/check during security hardening.
 * The load-balancer always restarts in case of crashing.
 * The app and redis ports are not exposed, so it's not possible to connect from the outside.
-
