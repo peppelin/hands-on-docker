@@ -117,3 +117,12 @@ Notice that we removed the port mapping from our app containers : we won't acces
 Start everything with the `docker-compose up` command. You should now be able to use a single URL (on port 8000) that will be mapped to the load-balancer, and then to a random application instance, and finally to the redis instance.
 
 You can now use `Ctrl+C` to stop everything (just note that this time, the containers won't be auto-destroyed. If you run `docker ps -a` you will notice that they are still around. You can remove them with the `docker rm` command if you want).
+
+### Improvements
+
+* We've changed the app base image from ubuntu to alpine linux.
+* * The smaller the image, the better.
+* * Alpine has less applications installed, so less things to update/check during security hardening.
+* The load-balancer always restarts in case of crashing.
+* The app and redis ports are not exposed, so it's not possible to connect from the outside.
+
