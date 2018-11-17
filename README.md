@@ -1,45 +1,119 @@
 
 # Hands-on Docker
 
-## Step 5 : Running multiple instances of the application
+## Step 6 : Running a load-balancer
 
-Now that we can easily describe our infrastructure in a single file, and start it with a single command, what about adding more application containers ? After all, that's one of the big benefit of Docker : running multiple containers of the same image, and being able to scale up easily.
+Let's go one step further, and add a load-balancer in front of our 3 application instances. For example we can use [Nginx](https://www.nginx.com/). It has a [docker image](https://registry.hub.docker.com/_/nginx/) that can be used as reverse proxy and load-balancer.
 
-We will edit the `docker-compose.yml` file to declare 3 application containers :
+The load-balancer will listen on a single port (**8000** in our case), and forward the incoming requests to any of the 3 configured "backend" application containers.
+
+We will start by creating a new directory `load-balancer`, to store the Nginx configuration load-balancer/nginx.conf.
 
 ```
-redis:
-  image: redis
-app1:
-  build: .
-  hostname: app1
-  links:
-  - redis
-  ports:
-  - "8080:80"
-app2:
-  build: .
-  hostname: app2
-  links:
-  - redis
-  ports:
-  - "8081:80"
-app3:
-  build: .
-  hostname: app3
-  links:
-  - redis
-  ports:
-  - "8083:80"
+worker_processes 4;
+events { worker_connections 1024; }
+http {
+    sendfile on;
+    upstream app_servers {
+        server app1:80;
+        server app2:80;
+        server app3:80;
+    }
+    server {
+        listen 80;
+        location / {
+            if ($http_app = "app1"){
+              proxy_pass http://app1;
+            }
+            if ($http_app = "app2"){
+              proxy_pass http://app2;
+            }
+            if ($http_app = "app3"){
+              proxy_pass http://app3;
+            }
+            if ($cookie_app = "app1"){
+              proxy_pass http://app1;
+            }
+            if ($cookie_app = "app2"){
+              proxy_pass http://app2;
+            }
+            if ($cookie_app = "app3"){
+              proxy_pass http://app3;
+            }
+            proxy_pass         http://app_servers;
+            proxy_redirect     off;
+            proxy_set_header   Host $host;
+            proxy_set_header   X-Real-IP $remote_addr;
+            proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header   X-Forwarded-Host $server_name;
+        }
+    }
+}
 ```
 
-* the redis container is still the same
-* each app container now has a custom hostname, to be able to identify them in the logs (easier to read than the default auto-generated ID of the containers)
-* each app container has its port 3000 mapped to a different port on the docker host (from 3001 to 3003), because the docker host can't map the same port to multiple containers
-* every app container has a link to the same redis container
+Here, we define that HAProxy listen on port 80, and forwards the requests to a group of "app_servers". We then list all servers (containers, in our case) that belongs to this group, with their name and host:port.
 
-Start everything with the `docker-compose up` command. You should now be able to access each application instance on a different port, and you can check on the `/logs` URL that all the logs coming from the different containers are stored on the same redis instance (you can see the hostname of each application container in the logs).
+We have two options now:
+
+* Create a Dockerfile inside the "load-balancer" folder and describe the container configuration for the LB.
+```
+FROM nginx:latest
+COPY nginx.conf /etc/nginx/nginx.conf
+
+```
+* Modify the `docker-compose` file in the root folder to mount the nginx.conf file inside the container. We'll also link the container to the 3 running apps.
+```
+lb:
+    image: nginx:latest
+    ports:
+      - "8000:80"
+    volumes:
+      - ./load-balancer/nginx.conf:/etc/nginx/nginx.conf
+    links:
+      - app1
+      - app2
+      - app3
+    restart: always
+```
+We'll use the second method, and the full `docker-compose` file will be as follows:
+```
+version: '2'
+
+services:
+  redis:
+    image: redis
+  app1:
+    build: .
+    hostname: app1
+    links:
+      - redis
+  app2:
+    build: .
+    hostname: app2
+    links:
+      - redis
+  app3:
+    build: .
+    hostname: app3
+    links:
+      - redis
+  lb:
+    image: nginx:latest
+    ports:
+      - "8000:80"
+    volumes:
+      - ./load-balancer/nginx.conf:/etc/nginx/nginx.conf
+    links:
+      - app1
+      - app2
+      - app3
+    restart: always
+```
+
+We added a new container for nginx, using the official image and adding our config. This new container is linked to our 3 app containers, and map its port 8000 to the port 80 of the docker host.
+
+Notice that we removed the port mapping from our app containers : we won't access them directly as before, but through the load-balancer container. To access to each app individually, we've configured the headers in the nginx conf.
+
+Start everything with the `docker-compose up` command. You should now be able to use a single URL (on port 8000) that will be mapped to the load-balancer, and then to a random application instance, and finally to the redis instance.
 
 You can now use `Ctrl+C` to stop everything (just note that this time, the containers won't be auto-destroyed. If you run `docker ps -a` you will notice that they are still around. You can remove them with the `docker rm` command if you want).
-
-Let's move to the final step, [step6](https://github.com/peppelin/hands-on-docker/tree/step6) for adding the HAProxy acting as a load balancer
