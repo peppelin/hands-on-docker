@@ -52,6 +52,8 @@ http {
 ```
 
 Here, we define that HAProxy listen on port 80, and forwards the requests to a group of "app_servers". We then list all servers (containers, in our case) that belongs to this group, with their name and host:port.
+##### **NOTE**:
+We've added the possibility to choose the app server by passing the header **app** with the name of the server, or doing the same with a cookie qith the same name and value.
 
 We have two options now:
 
