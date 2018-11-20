@@ -63,7 +63,7 @@ docker images -a
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
 handsondocker       latest              e3f98fc5f89e        26 minutes ago      109MB
 <none>              <none>              6c4f495bdc96        22 hours ago        89.2MB
-lidl_web            latest              b6dbf8c63743        22 hours ago        89.2MB
+app_web             latest              b6dbf8c63743        22 hours ago        89.2MB
 <none>              <none>              3ebaefd32d0d        22 hours ago        89.2MB
 <none>              <none>              126d79a5e383        22 hours ago        89.2MB
 <none>              <none>              4b7011d6ce26        22 hours ago        78.2MB
