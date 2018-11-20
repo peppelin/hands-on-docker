@@ -41,17 +41,17 @@ To check if you have any container running, use the following command:
 $ docker ps
 docker ps
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                  NAMES
-c192f2479b6e        redis               "docker-entrypoint.s…"   6 hours ago         Up 6 hours          6379/tcp               lidl_redis_1
-1ca09b58ec5d        lidl_web            "python app.py"          6 hours ago         Up 6 hours          0.0.0.0:4000->80/tcp   lidl_web_1
+c192f2479b6e        redis               "docker-entrypoint.s…"   6 hours ago         Up 6 hours          6379/tcp               app_redis_1
+1ca09b58ec5d        lapp_web            "python app.py"          6 hours ago         Up 6 hours          0.0.0.0:4000->80/tcp   app_web_1
 ```
 From here, you can see the containers running, how much time they've been running. exposed ports, etc... but you can't see any stopped container.
 To do so, use the command below:
 ```
 $ docker ps -as
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                   PORTS                  NAMES               SIZE
-c192f2479b6e        redis               "docker-entrypoint.s…"   6 hours ago         Up 6 hours               6379/tcp               lidl_redis_1        0B (virtual 94.9MB)
+c192f2479b6e        redis               "docker-entrypoint.s…"   6 hours ago         Up 6 hours               6379/tcp               app_redis_1        0B (virtual 94.9MB)
 d7ce771cf210        redis               "docker-entrypoint.s…"   6 hours ago         Exited (0) 6 hours ago                          relaxed_tesla       0B (virtual 94.9MB)
-1ca09b58ec5d        lidl_web            "python app.py"          6 hours ago         Up 6 hours               0.0.0.0:4000->80/tcp   lidl_web_1          422kB (virtual 89.6MB)
+1ca09b58ec5d        app_web            "python app.py"          6 hours ago         Up 6 hours               0.0.0.0:4000->80/tcp   app_web_1          422kB (virtual 89.6MB)
 ```
 As you can see, **d7ce771cf210** has been exited 6 hours ago.
 
@@ -63,8 +63,8 @@ $ docker rm d7ce771cf210
 d7ce771cf210
 $ docker ps -as
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                   PORTS                  NAMES               SIZE
-c192f2479b6e        redis               "docker-entrypoint.s…"   6 hours ago         Up 6 hours               6379/tcp               lidl_redis_1        0B (virtual 94.9MB)
-1ca09b58ec5d        lidl_web            "python app.py"          6 hours ago         Up 6 hours               0.0.0.0:4000->80/tcp   lidl_web_1          422kB (virtual 89.6MB) 
+c192f2479b6e        redis               "docker-entrypoint.s…"   6 hours ago         Up 6 hours               6379/tcp               app_redis_1        0B (virtual 94.9MB)
+1ca09b58ec5d        app_web            "python app.py"          6 hours ago         Up 6 hours               0.0.0.0:4000->80/tcp   app_web_1          422kB (virtual 89.6MB) 
 ```
 
 ### Checking images
@@ -73,7 +73,7 @@ Any container is built from an image. To check all the images you have, use:
 ```
 $ docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
-lidl_web            latest              b6dbf8c63743        6 hours ago         89.2MB
+app_web            latest              b6dbf8c63743        6 hours ago         89.2MB
 redis               5.0.1-alpine        28d359e5d4bb        5 days ago          40.9MB
 redis               latest              415381a6cb81        5 days ago          94.9MB
 alpine              3.5                 dc496f71dbb5        2 months ago        4MB
