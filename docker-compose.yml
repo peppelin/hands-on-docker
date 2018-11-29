@@ -33,11 +33,11 @@ services:
     links:
       - redis
   lb:
-    image: nginx:latest
+    image: nginx:${NGINX_VERSION}
     ports:
       - "8000:80"
     volumes:
-      - ./load-balancer:/etc/nginx
+      - ./load-balancer/nginx.conf:/etc/nginx/nginx.conf
     hostname: proxy
     networks:
       - frontend

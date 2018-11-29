@@ -66,7 +66,7 @@ COPY nginx.conf /etc/nginx/nginx.conf
 * Modify the `docker-compose` file in the root folder to mount the nginx.conf file inside the container. We'll also link the container to the 3 running apps.
 ```
 lb:
-    image: nginx:latest
+    image: nginx:${NGINX_VERSION}
     ports:
       - "8000:80"
     volumes:
@@ -77,6 +77,7 @@ lb:
       - app3
     restart: always
 ```
+* You have to set up and ENV VAR so you can download the proper nginx image version (in case of doubt, use `latest`).
 We'll use the second method, and the full `docker-compose` file will be as follows:
 ```
 version: '2'
