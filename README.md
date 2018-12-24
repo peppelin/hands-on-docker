@@ -1,6 +1,6 @@
 # Hands-on Docker
 
-## Step 2 : Using an existing Node.js image
+## Step 2 : Using an existing Nginx image
 
 So, you have docker up and running. It's time to use it to run our application !
 
