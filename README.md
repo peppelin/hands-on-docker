@@ -18,11 +18,11 @@ Windows (the installation process depends on the Windows version):
 
 ## Basic commands
 
-Befors messing with docker, we'll review some commands to make ourselves comfortable with the tools.
+Before messing with docker, we'll review some commands to make ourselves comfortable with the tools.
 
 ### Running an image
 
-With docker, you can run containers, build from docker images. Let's run a basic linux container:
+With docker, you can run containers built from docker images. Let's run a basic linux container:
 ```
 docker run alpine:3.8 sh
 ```
@@ -42,7 +42,7 @@ $ docker ps
 docker ps
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                  NAMES
 c192f2479b6e        redis               "docker-entrypoint.s…"   6 hours ago         Up 6 hours          6379/tcp               app_redis_1
-1ca09b58ec5d        lapp_web            "python app.py"          6 hours ago         Up 6 hours          0.0.0.0:4000->80/tcp   app_web_1
+1ca09b58ec5d        app_web            "python app.py"          6 hours ago         Up 6 hours          0.0.0.0:4000->80/tcp   app_web_1
 ```
 From here, you can see the containers running, how much time they've been running. exposed ports, etc... but you can't see any stopped container.
 To do so, use the command below:
@@ -55,7 +55,7 @@ d7ce771cf210        redis               "docker-entrypoint.s…"   6 hours ago  
 ```
 As you can see, **d7ce771cf210** has been exited 6 hours ago.
 
-If you need to check for any information about a container, the commando
+If you need to check for any information about a container, the command **docker inspect** will output all the container information in json format.
 
 To delete any image, use the command rm
 ```
