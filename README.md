@@ -73,7 +73,7 @@ Any container is built from an image. To check all the images you have, use:
 ```
 $ docker images
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
-app_web            latest              b6dbf8c63743        6 hours ago         89.2MB
+app_web             latest              b6dbf8c63743        6 hours ago         89.2MB
 redis               5.0.1-alpine        28d359e5d4bb        5 days ago          40.9MB
 redis               latest              415381a6cb81        5 days ago          94.9MB
 alpine              3.5                 dc496f71dbb5        2 months ago        4MB
