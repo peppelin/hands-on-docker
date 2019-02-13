@@ -82,7 +82,7 @@ Ok, enough playing with the images - let's play with containers!
 We will run a new container based on our image, using the [`docker run`](https://docs.docker.com/reference/commandline/cli/#run) command :
 
 ```
-docker run --rm -it -p 8080:80 handsondocker
+docker run --rm -it -p 8080:3000 handsondocker
 ```
 
 * the `--rm` option is used to auto-remove the container at the end (otherwise, Docker will just stop it, so that it can be started again - or manually removed if you don't need it anymore). If you are playing with Docker, and starting lots of containers, it is recommended to use the `--rm` option, to avoid keeping lots of unused containers around.
@@ -98,7 +98,7 @@ You can check with the `docker ps` that the container is started :
 
 ```
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                  NAMES
-11156f83978b        handsondocker       "nginx -g 'daemon of…"   4 seconds ago       Up 3 seconds        0.0.0.0:8080->80/tcp   dreamy_kirch
+11156f83978b        handsondocker       "nginx -g 'daemon of…"   4 seconds ago       Up 3 seconds        0.0.0.0:8080->3000/tcp   dreamy_kirch
 ```
 
 We can verify that the port `8080` has been mapped. And we can also see that the container has been given an auto-generated name `dreamy_kirch`, because we did not gave him one.
